@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Roboto', sans-serif; background: linear-gradient(to bottom, #e5e7eb, #f3f4f6); margin: 0; height: 100vh; display: flex; flex-direction: column; }
+    .message { animation: fadeIn 0.3s ease-in; }
+    .sent { animation: slideInRight 0.3s ease-out; }
+    .received { animation: slideInLeft 0.3s ease-out; }
+    .chat-list-item:hover { background: #f1f5f9; transition: background 0.2s; }
+    .message-menu { z-index: 50; }
+    .typing-indicator { animation: fadeIn 0.3s ease-in; }
+    .dots span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #999; margin: 0 1px; animation: typingBounce 1.4s infinite ease-in-out; }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-100%); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    .container { flex: 1; display: flex; overflow: hidden; }
+    .chat-list { width: 30%; min-width: 300px; background: white; overflow-y: auto; transition: width 0.3s; }
+    .chat-container { flex: 1; display: flex; flex-direction: column; background: white; transition: margin-left 0.3s; }
+    @media (max-width: 768px) {
+      .chat-list { width: 100%; max-width: 100%; position: absolute; top: 0; left: 0; height: 100%; z-index: 10; background: white; transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
+      .chat-list.open { transform: translateX(0); }
+      .chat-container { width: 100%; margin-left: 0; }
+      .chat-header button#backBtn { display: block; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="selector bg-white shadow-lg rounded-lg p-6 max-w-md mx-auto my-4">
+    <h3 class="text-xl font-semibold text-gray-800 mb-4">Enter Your User ID</h3>
+    <input type="number" id="currentUserInput" placeholder="Enter your user ID" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+    <button class="start-chat w-full mt-3 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition duration-200" onclick="startChat()">Start Chat</button>
+  </div>
+
+  <div class="container">
+    <div class="chat-list" id="chatListContainer" style="display: none;">
+      <div class="flex justify-between items-center mb-4 p-4">
+        <h2 class="text-lg font-semibold text-gray-800">Chats</h2>
+        <div class="flex items-center">
+          <input type="number" id="newChatInput" placeholder="User ID" class="p-1 border border-gray-300 rounded w-20 text-sm mr-2 focus:outline-none focus:ring-1 focus:ring-green-500">
+          <button id="startNewChatBtn" class="text-green-500 hover:text-green-600" title="Start new chat">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div id="chatList"></div>
+    </div>
+    <div class="chat-container" id="chatContainer" style="display: none;">
+      <div class="chat-header flex justify-between items-center bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-t-lg">
+        <div class="flex items-center flex-1">
+          <button id="backBtn" class="mr-3 text-white md:hidden" title="Back">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          </button>
+          <img id="otherUserDp" src="https://via.placeholder.com/40" alt="Profile" class="w-10 h-10 rounded-full mr-3">
+          <div>
+            <h3 class="text-lg font-semibold">Chat with User <span id="otherUserIdLabel"></span></h3>
+            <span id="onlineStatus" class="text-sm opacity-80"></span>
+          </div>
+        </div>
+        <div class="flex">
+          <button id="clearBtn" class="bg-white text-green-600 px-3 py-1 rounded-md hover:bg-gray-100 transition duration-200">Clear</button>
+          <button id="blockBtn" class="bg-white text-green-600 px-3 py-1 rounded-md hover:bg-gray-100 transition duration-200 ml-2">Block</button>
+        </div>
+      </div>
+      <div class="chat-box flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col gap-3"></div>
+      <div class="chat-input flex p-4 border-t border-gray-200">
+        <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" disabled>
+        <button id="sendBtn" class="bg-green-500 text-white px-4 py-2 ml-3 rounded-lg hover:bg-green-600 transition duration-200" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    // If this HTML is served by the same server, you can also use: const socket = io();
+    const socket = io('https://tenanttrust.appistansoft.com');
+
+    let currentUserId = null;
+    let otherUserId = null;
+    let iBlockedOther = false;
+    let blockedByOther = false;
+    let messages = [];
+    let otherUser = null;
+    let chatList = [];
+    let typingTimeout;
+
+    const chatBox = document.querySelector('.chat-box');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const blockBtn = document.getElementById('blockBtn');
+    const otherUserIdLabel = document.getElementById('otherUserIdLabel');
+    const onlineStatusEl = document.getElementById('onlineStatus');
+    const chatListEl = document.getElementById('chatList');
+    const chatListContainer = document.getElementById('chatListContainer');
+    const chatContainer = document.getElementById('chatContainer');
+    const selector = document.querySelector('.selector');
+    const backBtn = document.getElementById('backBtn');
+    const otherUserDp = document.getElementById('otherUserDp');
+    const startNewChatBtn = document.getElementById('startNewChatBtn');
+
+    function updateStatusDisplay() {
+      if (onlineStatusEl && otherUser) {
+        if (otherUser.isOnline) {
+          onlineStatusEl.innerText = 'online';
+        } else {
+          onlineStatusEl.innerText = otherUser.lastSeen ? `last seen ${formatLastSeen(otherUser.lastSeen)}` : 'offline';
+        }
+      }
+    }
+
+    function formatLastSeen(isoString) {
+      try {
+        const d = new Date(isoString);
+        return d.toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true });
+      } catch (e) {
+        return isoString;
+      }
+    }
+
+    function formatTimestamp(date) {
+      const d = new Date(date);
+      const today = new Date();
+      const isToday = d.toDateString() === today.toDateString();
+      if (isToday) {
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+      }
+      return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    }
+
+    function renderChatList() {
+      chatListEl.innerHTML = '';
+      chatList.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'chat-list-item flex items-center p-3 border-b border-gray-200 hover:bg-gray-100 transition duration-200 cursor-pointer';
+        div.onclick = () => loadChat(item.user.id);
+        const lastMessagePreview = item.lastMessage.message ? (item.lastMessage.message.length > 30
+          ? item.lastMessage.message.substring(0, 27) + '...'
+          : item.lastMessage.message) : '';
+        const unreadBadge = item.unreadCount > 0 ? `<div class="unread-count bg-green-500 text-white text-xs rounded-full px-2 py-0.5 ml-2">${item.unreadCount}</div>` : '';
+        const lastMessageClass = item.unreadCount > 0 ? 'font-semibold text-gray-800' : 'text-sm text-gray-600';
+
+        const statusText = item.user.isOnline ? 'online' : (item.user.lastSeen ? `last seen ${formatLastSeen(item.user.lastSeen)}` : '');
+
+        div.innerHTML = `
+          <img src="${item.user.image || 'https://via.placeholder.com/40'}" alt="Profile" class="w-10 h-10 rounded-full mr-3">
+          <div class="flex-1">
+            <div class="flex justify-between">
+              <div class="user-name font-semibold text-gray-800">${item.user.name || item.user.id}</div>
+              <div class="flex items-center">
+                <div class="timestamp text-xs text-gray-500">${formatTimestamp(item.lastMessage.createdAt)}</div>
+                ${unreadBadge}
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">${statusText}</div>
+            <div class="last-message text-sm ${lastMessageClass}">${lastMessagePreview}</div>
+          </div>
+        `;
+        chatListEl.appendChild(div);
+      });
+    }
+
+    function loadChat(userId) {
+      otherUserId = userId;
+      chatContainer.style.display = 'flex';
+      if (window.innerWidth <= 768) {
+        chatListContainer.classList.remove('open');
+      }
+      socket.emit('joinChat', { userId: currentUserId, otherUserId });
+    }
+
+    function startNewChat() {
+      const id = parseInt(document.getElementById('newChatInput').value);
+      if (!id || id === currentUserId) {
+        alert('Please enter a valid different user ID.');
+        return;
+      }
+      document.getElementById('newChatInput').value = '';
+      loadChat(id);
+    }
+
+    function startChat() {
+      currentUserId = parseInt(document.getElementById('currentUserInput').value);
+      if (!currentUserId) {
+        alert("Please enter your user ID.");
+        return;
+      }
+
+      selector.style.display = 'none';
+      chatListContainer.style.display = 'block';
+      chatContainer.style.display = 'none';
+
+      socket.emit('connectUser', { userId: currentUserId });
+      socket.emit('getChatList', { userId: currentUserId });
+
+      socket.on('chatList', (list) => {
+        chatList = list;
+        renderChatList();
+      });
+
+      socket.on('chatListUpdate', (updated) => {
+        chatList = updated;
+        renderChatList();
+      });
+
+      socket.on('loadChatData', ({ otherUserId: oid, messages: msgs, user, iBlockedOther: ibo, blockedByOther: bbo }) => {
+        if (oid !== otherUserId) return;
+        messages = msgs || [];
+        chatBox.innerHTML = '';
+        messages.forEach(renderMessage);
+        scrollToBottom();
+        // mark messages as read when entering chat
+        socket.emit('markAllAsRead', { receiverId: currentUserId, senderId: otherUserId });
+        otherUser = user;
+        otherUserIdLabel.innerText = user.name || user.id;
+        otherUserDp.src = user.image || 'https://via.placeholder.com/40';
+        updateStatusDisplay();
+        iBlockedOther = ibo;
+        blockedByOther = bbo;
+        const isBlocked = blockedByOther || iBlockedOther;
+        messageInput.disabled = isBlocked;
+        sendBtn.disabled = isBlocked;
+      });
+
+      socket.on('statusUpdate', (data) => {
+        if (data.userId === otherUserId && otherUser) {
+          otherUser.isOnline = data.isOnline;
+          if (!data.isOnline && data.lastSeen) {
+            otherUser.lastSeen = data.lastSeen;
+          } else if (data.isOnline) {
+            otherUser.lastSeen = null;
+          }
+          updateStatusDisplay();
+        }
+        chatList.forEach(item => {
+          if (item.user.id === data.userId) {
+            item.user.isOnline = data.isOnline;
+            if (!data.isOnline && data.lastSeen) {
+              item.user.lastSeen = data.lastSeen;
+            } else if (data.isOnline) {
+              item.user.lastSeen = null;
+            }
+          }
+        });
+        renderChatList();
+      });
+
+      socket.on('receiveMessage', (msg) => {
+        if ((msg.senderId === otherUserId && msg.receiverId === currentUserId) ||
+            (msg.senderId === currentUserId && msg.receiverId === otherUserId)) {
+          messages.push(msg);
+          renderMessage(msg);
+          scrollToBottom();
+          if (msg.senderId === otherUserId) {
+            socket.emit('markMessageAsRead', { messageId: msg.id });
+          }
+        }
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('messagesReadBy', ({ receiverId }) => {
+        if (receiverId === otherUserId) {
+          document.querySelectorAll('.sent').forEach(el => {
+            const msgId = el.id.split('-')[1];
+            const statusEl = document.getElementById(`status-${msgId}`);
+            if (statusEl) statusEl.textContent = 'Seen';
+          });
+        }
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('singleMessageRead', ({ messageId, receiverId }) => {
+        if (receiverId === otherUserId) {
+          const statusEl = document.getElementById(`status-${messageId}`);
+          if (statusEl) statusEl.textContent = 'Seen';
+        }
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('messageDeleted', ({ messageId, deletedBy }) => {
+        if (deletedBy.includes(currentUserId)) {
+          const msgEl = document.getElementById(`msg-${messageId}`);
+          if (msgEl) msgEl.remove();
+          messages = messages.filter(m => m.id !== messageId);
+        }
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('chatCleared', () => {
+        chatBox.innerHTML = '';
+        messages = [];
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('iBlockedOther', ({ otherUserId: oid }) => {
+        if (oid === otherUserId) {
+          iBlockedOther = true;
+          blockBtn.textContent = 'Unblock';
+          alert('User blocked successfully');
+          messageInput.disabled = true;
+          sendBtn.disabled = true;
+        }
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('iUnblockedOther', ({ otherUserId: oid }) => {
+        if (oid === otherUserId) {
+          iBlockedOther = false;
+          blockBtn.textContent = 'Block';
+          alert('User unblocked successfully');
+          if (!blockedByOther) {
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+          }
+        }
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('blockedByOther', ({ blockerId }) => {
+        if (blockerId === otherUserId) {
+          blockedByOther = true;
+          messageInput.disabled = true;
+          sendBtn.disabled = true;
+          alert('You have been blocked by this user');
+        }
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('unblockedByOther', () => {
+        blockedByOther = false;
+        if (!iBlockedOther) {
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+        }
+        alert('You have been unblocked by this user');
+        socket.emit('getChatList', { userId: currentUserId });
+      });
+
+      socket.on('userTyping', ({ userId }) => {
+        if (userId === otherUserId) showTypingIndicator();
+      });
+
+      socket.on('userStopTyping', ({ userId }) => {
+        if (userId === otherUserId) hideTypingIndicator();
+      });
+
+      // Already present custom error channel
+      socket.on('socketError', ({ message }) => {
+        console.error('Socket error:', message);
+        alert(message);
+      });
+
+      // NEW: also catch built-in "error" just in case
+      socket.on('error', (err) => {
+        const message = (err && err.message) ? err.message : (typeof err === 'string' ? err : 'Unknown socket error');
+        console.error('Socket error (builtin):', message, err);
+        alert(message);
+      });
+    }
+
+    sendBtn.addEventListener('click', () => {
+      const text = messageInput.value.trim();
+      if (!text || messageInput.disabled) return;
+
+      socket.emit('sendMessage', {
+        senderId: currentUserId,
+        receiverId: otherUserId,
+        message: text,
+        type: 'text',
+      });
+
+      messageInput.value = '';
+    });
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+
+    messageInput.addEventListener('input', (e) => {
+      if (messageInput.disabled) return;
+      const isTyping = e.target.value.trim().length > 0;
+      if (isTyping) {
+        socket.emit('typing', { senderId: currentUserId, receiverId: otherUserId });
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          socket.emit('stopTyping', { senderId: currentUserId, receiverId: otherUserId });
+        }, 1500);
+      } else {
+        socket.emit('stopTyping', { senderId: currentUserId, receiverId: otherUserId });
+        clearTimeout(typingTimeout);
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      socket.emit('clearChat', { userId: currentUserId, otherUserId });
+    });
+
+    blockBtn.addEventListener('click', () => {
+      if (blockBtn.textContent === 'Block') {
+        if (!confirm('Are you sure you want to block this user?')) return;
+      }
+      socket.emit('toggleBlockUser', { userId: currentUserId, otherUserId });
+    });
+
+    startNewChatBtn.addEventListener('click', startNewChat);
+
+    backBtn.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        chatListContainer.classList.add('open');
+      }
+    });
+
+    function renderMessage(msg) {
+      const msgDiv = document.createElement('div');
+      msgDiv.id = `msg-${msg.id}`;
+      const isSent = msg.senderId === currentUserId;
+      msgDiv.className = `message p-3 rounded-lg max-w-[70%] relative ${isSent ? 'sent bg-green-500 text-white self-end' : 'received bg-gray-200 text-gray-900 self-start'}`;
+      let html = `<div class="msg-content break-words">${msg.message}</div>`;
+      html += `<span class="three-dots absolute top-2 ${isSent ? 'right-2' : 'left-2'} cursor-pointer text-gray-500" onclick="showMenu(${msg.id}, event)">...</span>`;
+      if (isSent) {
+        const status = msg.readStatus === 1 ? 'Seen' : 'Sent';
+        html += `<div class="status text-xs mt-1 flex items-center justify-end"><span id="status-${msg.id}" class="mr-1">${status}</span></div>`;
+      }
+      html += `<div class="timestamp text-xs text-gray-500 mt-1 ${isSent ? 'text-right' : 'text-left'}">${formatTimestamp(msg.createdAt)}</div>`;
+      msgDiv.innerHTML = html;
+      chatBox.appendChild(msgDiv);
+    }
+
+    function showMenu(id, event) {
+      event.stopPropagation();
+      let menu = document.getElementById(`menu-${id}`);
+      if (menu) {
+        menu.remove();
+        return;
+      }
+
+      const msg = messages.find(m => m.id == id);
+      if (!msg) return;
+
+      menu = document.createElement('div');
+      menu.id = `menu-${id}`;
+      menu.className = 'message-menu absolute bg-white border border-gray-300 rounded-md p-2 shadow-lg';
+
+      const rect = event.target.getBoundingClientRect();
+      menu.style.left = `${rect.left}px`;
+      menu.style.top = `${rect.bottom + 5}px`;
+      menu.style.zIndex = '50';
+
+      let menuHtml = `<div class="px-3 py-1 hover:bg-gray-100 cursor-pointer rounded text-sm" onclick="handleDelete(${id}, 'me')">Delete for me</div>`;
+      if (msg.senderId === currentUserId) {
+        menuHtml += `<div class="px-3 py-1 hover:bg-gray-100 cursor-pointer rounded text-sm mt-1" onclick="handleDelete(${id}, 'everyone')">Delete for everyone</div>`;
+      }
+      menu.innerHTML = menuHtml;
+
+      document.body.appendChild(menu);
+
+      const closeMenu = (e) => {
+        if (!menu.contains(e.target)) {
+          menu.remove();
+          document.removeEventListener('click', closeMenu);
+        }
+      };
+      document.addEventListener('click', closeMenu);
+    }
+
+    function handleDelete(id, type) {
+      socket.emit('deleteMessage', { userId: currentUserId, messageId: id, type });
+      const menu = document.getElementById(`menu-${id}`);
+      if (menu) menu.remove();
+    }
+
+    function showTypingIndicator() {
+      hideTypingIndicator();
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'typing-indicator received self-start p-3 max-w-[70%]';
+      typingDiv.innerHTML = `
+        <div class="bg-gray-200 p-3 rounded-lg">
+          <div class="flex items-center">
+            <div class="dots mr-2"><span></span><span></span><span></span></div>
+            <span class="text-gray-500 text-sm">${otherUser?.name || 'User'} is typing</span>
+          </div>
+        </div>
+      `;
+      chatBox.appendChild(typingDiv);
+      scrollToBottom();
+    }
+
+    function hideTypingIndicator() {
+      const el = document.querySelector('.typing-indicator');
+      if (el) el.remove();
+    }
+
+    function scrollToBottom() {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>

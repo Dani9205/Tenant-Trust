@@ -1,0 +1,29 @@
+{
+  "name": "gf",
+  "version": "1.0.0",
+  "description": "hj",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "j",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "firebase-admin": "^13.5.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "loginmodule": "^1.0.4",
+    "multer": "^1.4.5-lts.1",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.14.1",
+    "nodemailer": "^6.10.0",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.5.4",
+    "twilio": "^5.5.2"
+  }
+}
