@@ -27,9 +27,7 @@ const CommentController = require('./controllers/CommentController');
 
 const blogRoutes = require('./routes/blogRoutes');
 const imageVideosRoutes = require('./routes/imageVideosRoutes');
-
 const guaranteeLetterRoutes = require('./routes/guaranteeLetterRoutes');
-
 const notificationRoutes = require("./routes/notificationRoutes");
 
 

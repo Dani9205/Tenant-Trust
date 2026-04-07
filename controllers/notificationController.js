@@ -44,6 +44,10 @@ exports.sendPushNotification = async (req, res) => {
 
 
 
+
+
+
+
 // ✅ Add a new notification
 exports.createNotification = async (req, res) => {
   try {
@@ -90,6 +94,15 @@ exports.createNotification = async (req, res) => {
   }
 };
 
+
+
+
+
+
+
+
+
+
 // ✅ Get all notifications by receiverId
 exports.getNotificationsByReceiver = async (req, res) => {
   try {
@@ -122,6 +135,15 @@ exports.getNotificationsByReceiver = async (req, res) => {
   }
 };
 
+
+
+
+
+
+
+
+
+
 // ✅ Update isRead by notification id
 exports.markAsRead = async (req, res) => {
   try {
@@ -153,6 +175,14 @@ exports.markAsRead = async (req, res) => {
     });
   }
 };
+
+
+
+
+
+
+
+
 
 // ✅ Get notifications by receiverId and read/unread status
 exports.getNotificationsByReadStatus = async (req, res) => {
