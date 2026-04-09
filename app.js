@@ -1,7 +1,12 @@
 const express = require('express');
+const app = express();
 require('dotenv').config();
 require('./config/db');
 require('./models/association');
+
+const multer = require('multer');
+const upload = multer();
+app.use(upload.none());
 
 const cors = require('cors');
 const http = require('http');
@@ -29,10 +34,10 @@ const blogRoutes = require('./routes/blogRoutes');
 const imageVideosRoutes = require('./routes/imageVideosRoutes');
 const guaranteeLetterRoutes = require('./routes/guaranteeLetterRoutes');
 const notificationRoutes = require("./routes/notificationRoutes");
+const notificationSettingsRoutes = require("./routes/appSettingsRoute");
 
 
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -60,6 +65,7 @@ app.use('/api', blogRoutes);
 app.use('/api', imageVideosRoutes);
 app.use('/api', guaranteeLetterRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/settings/api", notificationSettingsRoutes);
 
 
 

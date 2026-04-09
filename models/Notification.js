@@ -26,7 +26,10 @@ const Notification = sequelize.define('Notification', {
     allowNull: false,
   },
   type: {
-    type: DataTypes.ENUM('latestUpdate', 'appExperience', 'maintenanceRequest', 'leaseExpiry', 'paymentDecision','NewMessage'),
+    type: DataTypes.ENUM('app',
+      'maintenance',
+      'property',
+      'message'),
     allowNull: false
   },
   isRead: {

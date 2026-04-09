@@ -12,6 +12,7 @@ const Blog = require('./Blog');
 const Comment = require('./Comment');
 const Notification = require('./Notification');
 const GuaranteeLetter = require('./GuaranteeLetter');
+const NotificationSettings = require('../models/NotificationSettings');
 
 GuaranteeLetter.belongsTo(User, { foreignKey: 'userId' });
 User.hasOne(GuaranteeLetter, { foreignKey: 'userId' });
@@ -116,6 +117,21 @@ Notification.belongsTo(User, { as: 'sender', foreignKey: 'senderId' });
 Notification.belongsTo(User, { as: 'receiver', foreignKey: 'receiverId' });
 module.exports = { User,Chat, Blog, Comment };
 
+
+//-----------------------------------------------------------------------//
+// USER ↔ NOTIFICATION SETTINGS (1:1)
+User.hasOne(NotificationSettings, {
+  foreignKey: "userId",
+  as: "notificationSettings",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+NotificationSettings.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+//----------------------------------------------------------------------//
 
 
 
